@@ -1,40 +1,70 @@
-import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
-export function ProgressBar({storiesOpen, amount = 1, duration = 3000 }: { storiesOpen: boolean; amount?: number; duration?: number }) {
-  const [progress, setProgress] = useState(0);
-
-  function timer() {
-    let startTimer: ReturnType<typeof setTimeout> | null = null;
-    if (storiesOpen) {
-      setProgress(0);
-      startTimer = setTimeout(() => setProgress(100), 20);
-    } else {
-      setProgress(0);
-    }
-    return () => {
-      if (startTimer) clearTimeout(startTimer);
-    };
-  }
-  useEffect(() => {
-    timer();
-  }, [storiesOpen]);
-
+type ProgressBarProps = { amount: number; currentIndex: number; progress: number };
+export function ProgressBar({ amount, currentIndex, progress }: ProgressBarProps) {
   return (
     <div className="flex w-full gap-1 h-1">
-      {[...Array(amount)].map((_, index) => (
-        <div key={index} className="grow h-full rounded-full bg-white/20 overflow-hidden">
-          <div
-            style={{ width: `${progress}%`, transition: `width ${duration}ms linear` }}
-            className="bg-white h-full rounded-full"
-          />
-        </div>
-      ))}
+      {[...Array(amount)].map((_, i) => {
+        const width = i < currentIndex ? "100%" : i === currentIndex ? `${progress}%` : "0%";
+        return (
+          <div key={i} className="grow h-full rounded-full bg-white/20 overflow-hidden">
+            <div style={{ width, transition: "width 100ms linear" }} className="bg-white h-full rounded-full" />
+          </div>
+        );
+      })}
     </div>
   );
 }
 
-export function Stories({url, storiesOpen, setStoriesOpen}: {url: string; storiesOpen: boolean; setStoriesOpen: (open: boolean) => void }) {
+export function Stories({ urls, storiesOpen, setStoriesOpen, duration = 3000 }: { urls: string[]; storiesOpen: boolean; setStoriesOpen: (open: boolean) => void; duration?: number }) {
+  const amount = urls.length;
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const rafRef = useRef<number | null>(null);
+  const startRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!storiesOpen) {
+      setCurrentIndex(0);
+      setProgress(0);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      return;
+    }
+
+    function step(now: number) {
+      if (startRef.current === null) startRef.current = now;
+      const elapsed = now - startRef.current;
+      const pct = Math.min(100, (elapsed / duration) * 100);
+      setProgress(pct);
+      if (pct >= 100) {
+        // move to next or close if last
+        if (currentIndex >= amount - 1) {
+          setStoriesOpen(false);
+        } else {
+          setCurrentIndex((i) => i + 1);
+          startRef.current = null;
+          setProgress(0);
+        }
+      } else {
+        rafRef.current = requestAnimationFrame(step);
+      }
+    }
+
+    rafRef.current = requestAnimationFrame(step);
+
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      startRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storiesOpen, currentIndex, amount, duration]);
+
+  // reset currentIndex when urls change
+  useEffect(() => {
+    setCurrentIndex(0);
+    setProgress(0);
+  }, [urls]);
+
   return (
     <dialog open className="fixed gap-2 flex flex-col items-stretch top-1/2 left-1/2 -translate-1/2 w-9/10 h-9/10 bg-background border border-white/20 rounded-2xl p-6">
       <div className="flex justify-between">
@@ -43,29 +73,29 @@ export function Stories({url, storiesOpen, setStoriesOpen}: {url: string; storie
           X
         </button>
       </div>
-      <ProgressBar storiesOpen={storiesOpen} duration={3000} />
-      <Image src={url} alt="User's Story" className="h-full self-center w-full rounded-xl max-w-xs aspect-9/16 object-cover" width={64} height={64} />
+      <ProgressBar amount={amount} currentIndex={currentIndex} progress={progress} />
+      <div className="h-full self-center w-full rounded-xl max-w-xs aspect-9/16 overflow-hidden flex items-center justify-center">
+        {/* Use standard img for object URLs */}
+        <img src={urls[currentIndex]} alt={`Story ${currentIndex + 1}`} className="w-full h-full object-cover" />
+      </div>
     </dialog>
   );
 }
 
-export default function StoryButton({ url }: { url: string }) {
-    const [storiesOpen, setStoriesOpen] = useState(false);
-    const handleStoryClick = () => {
-        setStoriesOpen(true);
-        setTimeout(() => {
-            setStoriesOpen(false);
-        }, 3000);
-    }
+export default function StoryButton({ urls }: { urls: string[] }) {
+  const [storiesOpen, setStoriesOpen] = useState(false);
+  const handleStoryClick = () => {
+    setStoriesOpen(true);
+  };
 
   return (
     <>
-        <button onClick={handleStoryClick} className="w-16 h-16 cursor-pointer rounded-full bg-linear-to-br from-pink-300 to-purple-700 p-0.5">
+      <button onClick={handleStoryClick} className="w-16 h-16 cursor-pointer rounded-full bg-linear-to-br from-pink-300 to-purple-700 p-0.5">
         <div className="w-full h-full rounded-full bg-background p-0.5 flex items-center justify-center">
-            <Image src={url} alt="See User's Story" className="w-full h-full rounded-full object-cover" width={64} height={64} />
+          <img src={urls[0]} alt="See User's Story" className="w-full h-full rounded-full object-cover" />
         </div>
-        </button>
-        {storiesOpen && <Stories url={url} storiesOpen={storiesOpen} setStoriesOpen={setStoriesOpen} />}
+      </button>
+      {storiesOpen && <Stories urls={urls} storiesOpen={storiesOpen} setStoriesOpen={setStoriesOpen} duration={3000} />}
     </>
   );
 }
