@@ -56,10 +56,8 @@ export function Stories({ urls, storiesOpen, setStoriesOpen, duration = 3000 }: 
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       startRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storiesOpen, currentIndex, amount, duration]);
 
-  // reset currentIndex when urls change
   useEffect(() => {
     setCurrentIndex(0);
     setProgress(0);
@@ -75,7 +73,6 @@ export function Stories({ urls, storiesOpen, setStoriesOpen, duration = 3000 }: 
       </div>
       <ProgressBar amount={amount} currentIndex={currentIndex} progress={progress} />
       <div className="h-full self-center w-full rounded-xl max-w-xs aspect-9/16 overflow-hidden flex items-center justify-center">
-        {/* Use standard img for object URLs */}
         <img src={urls[currentIndex]} alt={`Story ${currentIndex + 1}`} className="w-full h-full object-cover" />
       </div>
     </dialog>
