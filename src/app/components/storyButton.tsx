@@ -3,11 +3,11 @@ import { useState, useEffect, useRef } from "react";
 type ProgressBarProps = { amount: number; currentIndex: number; progress: number };
 export function ProgressBar({ amount, currentIndex, progress }: ProgressBarProps) {
   return (
-    <div className="flex w-full gap-1 h-1">
+    <div className="flex w-full gap-1 h-1 justify-center">
       {[...Array(amount)].map((_, i) => {
         const width = i < currentIndex ? "100%" : i === currentIndex ? `${progress}%` : "0%";
         return (
-          <div key={i} className="grow h-full rounded-full bg-white/20 overflow-hidden">
+          <div key={i} className="grow h-full rounded-full bg-white/20 max-w-xs overflow-hidden">
             <div style={{ width, transition: "width 100ms linear" }} className="bg-white h-full rounded-full" />
           </div>
         );
@@ -37,7 +37,6 @@ export function Stories({ urls, storiesOpen, setStoriesOpen, duration = 3000 }: 
       rafRef.current = requestAnimationFrame(step);
     }
   }
-
   useEffect(() => {
     if (!storiesOpen) {
       setCurrentIndex(0);
@@ -45,9 +44,7 @@ export function Stories({ urls, storiesOpen, setStoriesOpen, duration = 3000 }: 
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       return;
     }
-
     rafRef.current = requestAnimationFrame(step);
-
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       startRef.current = null;
@@ -95,8 +92,8 @@ export function Stories({ urls, storiesOpen, setStoriesOpen, duration = 3000 }: 
   }, [storiesOpen]);
 
   return (
-    <dialog open className="fixed gap-2 flex flex-col items-stretch top-1/2 left-1/2 -translate-1/2 w-9/10 h-9/10 bg-background border border-white/20 rounded-2xl p-6">
-      <div className="flex justify-between">
+    <dialog open className="fixed gap-2 flex flex-col items-center top-1/2 left-1/2 -translate-1/2 w-9/10 h-9/10 bg-background border border-white/20 rounded-2xl p-6">
+      <div className="flex self-stretch justify-between">
         <p className="text-foreground/60 text-lg">Stories</p>
         <button onClick={() => setStoriesOpen(false)} className="text-foreground/50 cursor-pointer text-2xl leading-0 hover:text-foreground transition-colors" aria-label="Close">
           &times;
@@ -105,7 +102,7 @@ export function Stories({ urls, storiesOpen, setStoriesOpen, duration = 3000 }: 
 
       <ProgressBar amount={amount} currentIndex={currentIndex} progress={progress} />
 
-      <div className="h-full self-center w-full rounded-xl max-w-xs aspect-9/16 overflow-hidden flex items-center justify-center">
+      <div className="h-full w-full rounded-xl max-w-xs aspect-9/16 overflow-hidden flex items-center justify-center">
         <img src={urls[currentIndex]} alt={`Story ${currentIndex + 1}`} className="w-full h-full object-cover" />
       </div>
     </dialog>
