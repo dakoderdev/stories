@@ -9,7 +9,7 @@ type Story = {
   expiresAt: number;
 };
 
-const TEST_DURATION = 90_000;
+const TEST_DURATION = 24 * 60 * 60 * 1000;
 
 export default function Home() {
   const [stories, setStories] = useState<Story[]>([]);
